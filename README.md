@@ -1,0 +1,31 @@
+## Background:
+
+# A Decentralized Autonomous Organization (DAO) is a smart contract that allows a group of users to collectively make decisions without relying on a central authority. Typically, decisions are made through proposals and voting. Token holders (or approved members) vote on these proposals, and depending on the outcome, actions may be taken automatically.
+
+## Provision
+
+# a basic DAO contract that enables a group of participants to:
+	1.	Propose ideas (e.g., changing a setting, spending funds, or taking an action).
+	2.	Vote on those proposals within a fixed time period.
+	3.	Execute the approved proposal automatically if it passes the vote threshold.
+
+
+1.	Membership System:
+	•	Only members can create proposals and vote. 
+	•	!!There should be a way to add members (you can hardcode or create a function for this).
+2.	Proposal Management:
+	•	Members can create new proposals with a description.
+	•	Each proposal has a voting deadline.
+	•	Each proposal tracks votes for and votes against.
+3.	Voting Logic:
+	•	Members can vote once per proposal.
+	•	Voting can be either in favor or against.
+4.	Execution:
+	•	Once a proposal’s deadline is over, it can be executed.
+	•	Execution logic should only trigger if the proposal passes (e.g., more “for” votes than “against”).
+	•	You can keep execution as a placeholder function that simulates some change or action.
+5.	Events:
+	•	Emit relevant events for proposal creation, voting, and execution for better transparency.
+
+
+
