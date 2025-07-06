@@ -2,29 +2,33 @@
 
 pragma solidity ^0.8.20;
 
-contract DAO {
+interface DAOEvents {
 
-    event NewProposal(uint proposalId, address proposer, bytes proposalData, uint deadlineOfVoting);
+    event NewProposal(uint proposalId, address proposer, bytes32 proposalData, uint deadlineOfVoting);
     event Welcome(address newMember, address welcomedBy);
     event ProposalExecuted(uint proposalId);
+    event ProposalAltered(uint256 proposalId);
+}
+
+contract DAO is DAOEvents{
 
     address[] public members;
     
     mapping(address => bool) public isMember;
     
     enum Support {voteFor, voteAgainst} 
-    //think of this like every voter would have an enum card which they can use to show choice.
+    // think of this like every voter would have an enum card which they can use to show choice.
 
     event NewTransparentVote(address voter, uint proposalId, Support);
 
 
-    mapping(uint => mapping(address => bool)) hasVoted;
-    //nested mapping to ensure a particular proposal doesnt take
-    //a vote from the same address again
+    // mapping(uint => mapping(address => bool)) hasVoted;
+    // nested mapping to ensure a particular proposal doesnt take
+    // a vote from the same address again
 
     struct Proposal{
         address sender;
-        bytes idea; 
+        bytes32 idea; 
         uint forCount;
         uint againstCount;
         uint proposalId; //each proposal will be unique by its proposalId
@@ -40,6 +44,11 @@ contract DAO {
 
     Proposal[] public proposals;
 
+    constructor () {
+         isMember[msg.sender] = true;
+         members.push(msg.sender);
+    }
+
     function addMember(address newMember) external {
         require(isMember[msg.sender], 'permission denied');
         require(!isMember[newMember], 'already a member.');
@@ -50,7 +59,7 @@ contract DAO {
         emit Welcome(newMember, msg.sender);
     }
 
-    function createProposal(bytes memory _idea, uint _votingPeriod) public {
+    function createProposal(bytes32 _idea, uint _votingPeriod) public returns (Proposal memory){
         require(isMember[msg.sender], 'not a member');
 
         Proposal memory proposal = Proposal({
@@ -68,56 +77,58 @@ contract DAO {
         proposals.push(proposal);
 
         emit NewProposal(proposal.proposalId, msg.sender, _idea, proposal.voteDeadline);
+
+        return proposal;
     }
 
-    Vote[] public votes;
+    function editProposal(uint256 _proposalId, bytes32 _newIdea, uint256 _votingPeriod) external {
+        require(isMember[msg.sender]);
+        require(proposals[_proposalId].sender == msg.sender);
+
+        Proposal storage editedProposal = proposals[_proposalId];
+        require (block.timestamp <= editedProposal.voteDeadline, "proposal already sent for evaluation");
+
+        editedProposal.idea = _newIdea;
+        editedProposal.forCount = 0;
+        editedProposal.againstCount = 0;
+        editedProposal.voteDeadline = block.timestamp + _votingPeriod;
+
+        emit ProposalAltered(_proposalId);
+    }
+
+    // Vote[] public votes; /* expensive */
+    mapping (address => mapping (uint256 => bool)) private hasVoted; /* voted for the proposal index */
 
     function castVote(uint _proposalId, Support _support) public {
         require(isMember[msg.sender], "not a member");
-        require(!hasVoted[_proposalId][msg.sender], "no double voting");
+        require(!hasVoted[msg.sender][_proposalId], "no double voting");
 
         Proposal storage proposal = proposals[_proposalId]; // the proposal to be dealt with
-        require (block.timestamp <= proposal.voteDeadline, 'too late to cast vote'); 
-        // the particular proposal cannot be dealt with any further if deadline has crossed
+        require (block.timestamp <= proposal.voteDeadline, 'voting period over for proposal'); 
 
-        // this contract wont directly cast vote but would also declare choice (go with or go against)
-        // everything below wouldnt make sense if caller was past deadline.
+        _support == Support.voteFor ? proposal.forCount++ : proposal.againstCount++ ;
 
-        if (_support == Support.voteFor) {
-            proposal.forCount++;
-        } else {
-            proposal.againstCount++;
-        }
-
-        // choice was declared, this lets the person now create their vote 
-        // then the vote will be put into record 
-        Vote memory newVote = Vote({
-            voter: msg.sender,
-            voteTo: _proposalId,
-            voteIdx: votes.length
-        });
-        votes.push(newVote);
-
-        hasVoted[_proposalId][msg.sender] = true;
+        hasVoted[msg.sender][_proposalId] = true;
 
         emit NewTransparentVote(msg.sender, _proposalId, _support);
     }
 
-    //the execute function is what ensures the smart contract is autonomous
-    // the execute function has to be private (only current contract can call or simply 
-    // ensuring the the function is auto executed).
     function execute(uint _proposalId) public {
         require(isMember[msg.sender]);
         require(_proposalId < proposals.length);
 
         Proposal storage proposal = proposals[_proposalId];
 
-        require(block.timestamp > proposal.voteDeadline);
-        require(!proposal.executed);
-        require(proposal.forCount > proposal.againstCount);
+        require(block.timestamp > proposal.voteDeadline, "voting is ongoing");
+        require(!proposal.executed, "already Executed");
+        require(proposal.forCount > proposal.againstCount, "not enough support");
+
+        require(proposal.forCount + proposal.againstCount> members.length/2, "low participation");
 
         proposal.executed = true;
 
         emit ProposalExecuted(_proposalId);
     }
+
+    
 }

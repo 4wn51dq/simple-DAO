@@ -6,10 +6,11 @@
 
 ## A basic implementation of a DAO 
 
--	Membership System:
+
+1.	Membership System:
 	•	Only members can create proposals and vote. 
 	•	!!There should be a way to add members (you can hardcode or create a function for this).
--	Proposal Management:
+2.	Proposal Management:
 	•	Members can create new proposals with a description.
 	•	Each proposal has a voting deadline.
 	•	Each proposal tracks votes for and votes against.
@@ -22,10 +23,6 @@
 	•	You can keep execution as a placeholder function that simulates some change or action.
 -	Events:
 	•	Emit relevant events for proposal creation, voting, and execution for better transparency.
-
-
-
-
 
 
 
