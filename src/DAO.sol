@@ -12,20 +12,6 @@ interface DAOEvents {
 
 contract DAO is DAOEvents{
 
-    address[] public members;
-    
-    mapping(address => bool) public isMember;
-    
-    enum Support {voteFor, voteAgainst} 
-    // think of this like every voter would have an enum card which they can use to show choice.
-
-    event NewTransparentVote(address voter, uint proposalId, Support);
-
-
-    // mapping(uint => mapping(address => bool)) hasVoted;
-    // nested mapping to ensure a particular proposal doesnt take
-    // a vote from the same address again
-
     struct Proposal{
         address sender;
         bytes32 idea; 
@@ -42,7 +28,18 @@ contract DAO is DAOEvents{
         uint voteIdx;
     }
 
+    address[] public members;
     Proposal[] public proposals;
+
+    
+    mapping(address => bool) public isMember;
+    mapping (address => mapping (uint256 => bool)) private hasVoted; /* voted for the proposal index */
+
+    
+    enum Support {voteFor, voteAgainst} 
+    event NewTransparentVote(address voter, uint proposalId, Support);
+
+
 
     constructor () {
          isMember[msg.sender] = true;
@@ -97,7 +94,6 @@ contract DAO is DAOEvents{
     }
 
     // Vote[] public votes; /* expensive */
-    mapping (address => mapping (uint256 => bool)) private hasVoted; /* voted for the proposal index */
 
     function castVote(uint _proposalId, Support _support) public {
         require(isMember[msg.sender], "not a member");
